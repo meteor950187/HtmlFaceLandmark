@@ -1,0 +1,1285 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mediapipe FaceLandmarker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&amp;display=swap" rel="stylesheet">
+
+    <!--<script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.js"></script>-->
+    <style>
+        * {
+            font-family: "Noto Sans TC", sans-serif;
+            overflow: hidden;
+        }
+
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            /* 寬度保持不變 */
+            height: 100vh;
+            position: relative;
+        }
+
+        video,
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            height: 100vh;
+            width: auto;
+            transform: translateX(-50%);
+        }
+
+
+        .container {
+            position: absolute;
+            z-index: 2;
+            height: 100%;
+            width: 100%;
+        }
+
+
+
+        .start {
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(2px);
+        }
+
+        .finish {
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            font-size: 24px;
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            animation: fadeIn 0.5s ease-out forwards;
+            backdrop-filter: blur(2px);
+            z-index: 999999999999;
+            position: relative;
+        }
+
+            .finish.scaleAnimation {
+                animation: rippleEffect 1s linear;
+            }
+
+        .start > .start-tip {
+            font-size: 24px;
+            margin: 0 60px;
+            color: white;
+            animation: fadeIn 1s ease-out forwards;
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .start > .start-countdown {
+            position: relative;
+            width: 100px;
+            /* 圓形的寬度 */
+            height: 100px;
+            /* 圓形的高度 */
+            border-radius: 50%;
+            position: relative;
+            background: rgba(51, 51, 51, 0.7);
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            transform: scale(1) rotate(44deg);
+        }
+
+
+            .start > .start-countdown::before {
+                content: "";
+                position: absolute;
+                box-sizing: border-box;
+                inset: 0px;
+                border-radius: 50%;
+                z-index: 2;
+                border: 6px solid rgba(255, 255, 255, 1);
+                animation: prixClipFix 3s linear forwards;
+            }
+
+            .start > .start-countdown > .start-countdown-text {
+                z-index: 1;
+                font-size: 42px;
+                line-height: 80px;
+                text-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+                transform: scale(1) rotate(-44deg);
+                color: white;
+                animation: aniCountdownText 1s ease-out infinite;
+            }
+
+        .start-countdown-end {
+            font-size: 60px;
+            color: white;
+            font-weight: 700;
+            letter-spacing: 8px;
+            animation: fadeIn 1s ease-out forwards, rippleEffect 1s linear 1s forwards;
+        }
+
+        .scaleAnimation {
+            animation: rippleEffect 1s linear;
+        }
+
+        .fadeOut {
+            animation: fadeOut 1s ease-out forwards;
+        }
+
+        .steps {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            height: 160px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(2px);
+            overflow: hidden;
+        }
+
+        .steps {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            height: 160px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(2px);
+        }
+
+        .steps-detect-tip {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            align-content: center;
+            align-items: center;
+            justify-content: center;
+            height: 160px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            color: white;
+            font-size: 24px;
+            animation: slideIn 0.5s ease-out forwards;
+            padding: 0 15%;
+            box-sizing: border-box;
+        }
+
+        .steps-loadingBar {
+            height: 8px;
+            width: 100%;
+            padding: 0 2%;
+            background: #56ccf2;
+            /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #56ccf2, #2f80ed);
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #56ccf2, #2f80ed);
+            position: absolute;
+            bottom: 0;
+            left: -1%;
+            border-radius: 4px;
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+
+        .steps-loadingBar-ani {
+            animation: barLoading 2s linear forwards;
+        }
+
+        .steps-process-success-text {
+            font-size: 24px;
+            color: white;
+            animation: fadeIn 1s ease-out 1s forwards, fadeOut 0.5s ease-out 2s forwards;
+            opacity: 0;
+        }
+
+        .steps-process-success-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200%;
+            /* 初始寬度 */
+            height: 200%;
+            /* 初始高度 */
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: 10;
+            animation: successOverlay 1s ease-out forwards;
+            border: 50% solid transparent;
+        }
+
+
+        .steps-action {
+            font-size: 24px;
+            color: white;
+            animation: typing 2s steps(50, end) forwards;
+            overflow: hidden;
+            /* 隱藏超出的部分 */
+            white-space: nowrap;
+        }
+
+
+        .steps-action {
+            font-size: 24px;
+            color: white;
+            animation: typing 2s steps(50, end) forwards;
+            overflow: hidden;
+            /* 隱藏超出的部分 */
+            white-space: nowrap;
+        }
+
+
+        .steps-detect-testInfo {
+            font-size: 24px;
+            color: white;
+            width: fit-content;
+            position: absolute;
+            background: rgba(51, 51, 51, 0.7);
+            top: 0;
+            left: 0;
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); /* 半透明白背景 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #ccc;
+            border-top-color: #007bff; /* 藍色旋轉邊 */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        .loadingText {
+            font-size: 18px;
+            color: white;
+        }
+
+        .playback-panel {
+            position: fixed;
+            inset: 0;
+            z-index: 1000000000000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.15));
+            pointer-events: none;
+        }
+
+        .playback-card {
+            width: min(520px, 100%);
+            color: white;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: left;
+            pointer-events: auto;
+        }
+
+        .playback-title {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .playback-message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .playback-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .playback-button {
+            border: 0;
+            border-radius: 999px;
+            background: #2f80ed;
+            color: white;
+            padding: 12px 18px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .playback-button:disabled {
+            background: #6f86a7;
+            cursor: not-allowed;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        @keyframes typing {
+            from {
+                width: 0;
+            }
+
+            to {
+                width: 100%;
+            }
+        }
+
+
+        @keyframes aniCountdownText {
+            0% {
+                transform: scale(1) rotate(-44deg);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.25) rotate(-44deg);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1) rotate(-44deg);
+                opacity: 1;
+            }
+        }
+
+
+
+
+        @keyframes prixClipFix {
+            0% {
+                clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 0 100%, 0 0);
+                border-color: rgba(255, 255, 255, 1);
+                opacity: 1.0;
+            }
+
+            25% {
+                clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 0 100%, 0 100%);
+            }
+
+            50% {
+                clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 100% 100%, 100% 100%);
+            }
+
+            75% {
+                clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 0, 100% 0, 100% 0)
+            }
+
+            100% {
+                clip-path: polygon(50% 50%, 0 0, 0 0, 0 0, 0 0, 0 0);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+        }
+
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+
+        @keyframes rippleEffect {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(10);
+                opacity: 0;
+            }
+        }
+
+        @keyframes successOverlay {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                display: block;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1);
+                display: block;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(0);
+                display: block;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0%);
+            }
+        }
+
+        @keyframes barLoading {
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        .face-background {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            bottom: 160px;
+            left: 0;
+            background-color: rgba(0,0,0,0.6);
+            mask: radial-gradient(ellipse 66% 46% at 50% 60%, transparent 70%, black 72%);
+            -webkit-mask: radial-gradient(ellipse 66% 46% at 50% 60%, transparent 70%, black 72%);
+        }
+
+        .is-hide {
+            display: none !important;
+        }
+    </style>
+    <script type="text/javascript" src="/Scripts/ExceptionMessage.js"></script>
+</head>
+
+<body>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <!-- <button id="test" style="position: absolute;z-index: 9999;">測試按鈕</button> -->
+    <div class="container">
+        <div class="start ">
+            <div class="start-tip">
+                點擊開始進行臉部驗證，測試過程中請勿配戴口罩。
+            </div>
+            <div class="start-countdown is-hide">
+                <div class="start-countdown-text">3</div>
+            </div>
+            <div class="start-countdown-end is-hide">START</div>
+        </div>
+        <div class="finish  is-hide">
+            檢測已完成，點擊這裡即可播放本次側錄影片。
+        </div>
+
+        <div class="steps is-hide">
+            <div class="steps-loadingBar">
+
+            </div>
+            <div class="steps-process-success is-hide">
+                <div class="steps-process-success-text">成功</div>
+                <div class="steps-process-success-overlay"></div>
+            </div>
+            <div class="step1 steps-action is-hide">
+                請正視鏡頭，進行臉部偵測
+            </div>
+            <div class="step2 steps-action is-hide">
+                請將臉轉向右邊
+            </div>
+            <div class="step3 steps-action is-hide">
+                請將臉轉向左邊
+            </div>
+            <div class="step4 steps-action is-hide">
+                請抬頭並將視線往下看
+            </div>
+            <div class="step5 steps-action is-hide">
+                請面向鏡頭眨眼
+            </div>
+            <div class="step6 steps-action is-hide">
+                請露出笑容
+            </div>
+        </div>
+        <div class="steps-detect-tip s is-hide">
+            請再靠近鏡頭，並讓臉部維持在畫面中央
+        </div>
+
+        <div class="steps-detect-testInfo is-hide">
+            <div><span>檢測項目：</span><span id="idTestItem"></span></div>
+            <div><span>目標分數：</span><span id="idTestTarget"></span></div>
+            <div><span>目前分數：</span><span id="idTestNow"></span></div>
+        </div>
+        <div class="face-background is-hide">
+
+        </div>
+    </div>
+
+    <div id="loadingOverlay" style="display:none">
+        <div class="spinner"></div>
+        <div class="loadingText">正在整理側錄影片...</div>
+    </div>
+    <div id="playbackPanel" class="playback-panel is-hide">
+        <div class="playback-card">
+            <div class="playback-title">影片已準備完成</div>
+            <div id="playbackMessage" class="playback-message">檢測完成後，會在這裡直接播放本次側錄影片。</div>
+            <div class="playback-actions">
+                <button id="replayButton" type="button" class="playback-button" disabled>重新播放</button>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        import { FilesetResolver, FaceLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+        //import * as MP4Box from 'https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.js';
+
+
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        let step = 0;
+        let isDetecting = false;
+        let lastDetectedTime = null;
+        let lastLowScoreTime = null;
+        let oneDetectMilliSecond = 3000;
+        let periodMilliSecond = 0;
+        let endStep = 4;
+        let loadingEventTag = -1;
+        const recordedChunks = [];
+        const processingChunks = [];
+        let mediaRecorder;
+        let currentPlaybackUrl = null;
+        let cameraStream = null;
+        let isPlaybackReady = false;
+        let isFinishing = false;
+        // document.getElementById('test').addEventListener('click', () => {
+        //     setNextStep();
+        //     let testChecked = true;
+        //     const testProcess = () => {
+        //         if (isDetecting) {
+        //             setDetectProcess(testChecked);
+        //         }
+        //         requestAnimationFrame(testProcess);
+        //     };
+
+        //     setTimeout(() => {
+        //         testChecked = false;
+        //     }, 7000);
+
+        //     setTimeout(() => {
+        //         testChecked = true;
+        //     }, 10000);
+        //     testProcess();
+        // });
+
+        function show(dom) {
+            dom.classList.remove('is-hide');
+        }
+
+        function hide(dom) {
+            dom.classList.add('is-hide');
+        }
+
+        function startButtonClick() {
+            let countdownValue = 3;
+            const countdownDom = document.querySelector('.start-countdown');
+            const startTipDom = document.querySelector('.start-tip');
+            const startTextDom = document.querySelector('.start-countdown-end');
+
+            const _end = () => {
+                countdownDom.classList.add('is-hide');
+                startTextDom.classList.remove('is-hide');
+                document.querySelector('.start').classList.add('is-hide');
+                setTimeout(() => {
+                    document.querySelector('.face-background').classList.remove('is-hide');
+                    setNextStep();
+                }, 500);
+            };
+
+
+            startTipDom.classList.add('is-hide');
+            countdownDom.classList.remove('is-hide');
+            _end();
+            return;
+
+            const setCountdownValue = () => {
+                if (countdownValue != 0) {
+                    countdownDom.querySelector('.start-countdown-text').innerText = countdownValue;
+                    countdownValue--;
+
+                    setTimeout(() => {
+                        setCountdownValue();
+                    }, 1000);
+                } else {
+                    //倒數結束跳start並準備開始
+                    countdownDom.classList.add('is-hide');
+                    startTextDom.classList.remove('is-hide');
+                    setTimeout(() => {
+                        document.querySelector('.start').classList.add('is-hide');
+                        setNextStep();
+                    }, 1700);
+                }
+            };
+
+
+            startTipDom.classList.add('is-hide');
+            countdownDom.classList.remove('is-hide');
+            //setCountdownValue();
+        }
+
+        function setNextStep() {
+            if (step == 0) {
+                const stepsDom = document.querySelector('.steps');
+                show(stepsDom);
+                step = 1;
+            } else {
+                step++;
+            }
+
+            isDetecting = true;
+            show(document.querySelector('.step' + step));
+        }
+
+        function setDetectProcess(isChecked, isSkip) {
+            const oneStepSuccess = () => {
+                const stepsDom = document.querySelector('.steps');
+
+                isDetecting = false; //暫時停止偵測
+                lastDetectedTime = null;
+                periodMilliSecond = 0;
+
+                for (let stepDom of stepsDom.children) {
+                    hide(stepDom);
+                }
+
+                show(document.querySelector('.steps-process-success'));
+
+                setTimeout(() => {
+                    hide(document.querySelector('.steps-process-success'));
+
+                    if (step == endStep) {
+                        //檢測完畢
+                        hide(document.querySelector('.steps'));
+                        show(document.querySelector('.finish'))
+                    } else {
+                        setNextStep();
+                    }
+                }, 2500);
+            };
+
+            const setDetectProcessBar = (_periodMilliSecond, _totalMilliSecond) => {
+                const loadingBarDom = document.querySelector('.steps-loadingBar');
+
+                if (_periodMilliSecond == 0) {
+                    show(loadingBarDom);
+                    loadingBarDom.style.width = '0%';
+                } else {
+                    const percentage = (_periodMilliSecond / _totalMilliSecond) * 100;
+
+                    if (percentage >= 100) {
+                        loadingBarDom.style.width = '100%';
+
+                        setTimeout(() => {
+                            hide(loadingBarDom);
+                        }, 10);
+                    } else {
+                        loadingBarDom.style.width = percentage + '%';
+                    }
+                }
+            };
+
+
+            const setDetectProcessBar2 = (cb) => {
+                const loadingBarDom = document.querySelector('.steps-loadingBar');
+
+
+                if (!loadingBarDom.classList.contains('steps-loadingBar-ani') && loadingEventTag == -1) {
+                    show(loadingBarDom);
+                    loadingBarDom.classList.add('steps-loadingBar-ani');
+
+                    loadingEventTag = setTimeout(() => {
+                        loadingBarDom.classList.remove('steps-loadingBar-ani');
+                        loadingEventTag = -1;
+                        hide(loadingBarDom);
+                        if (cb)
+                            cb();
+                    }, 2000);
+                }
+            };
+
+            if (isChecked) {
+                const detectTipDom = document.querySelector('.steps-detect-tip');
+                lastLowScoreTime = null;
+                hide(detectTipDom);
+                //分數有過
+                if (lastDetectedTime == null) {
+                    //設定新的持續偵測起始時間
+                    lastDetectedTime = Date.now();
+                }
+
+                periodMilliSecond = periodMilliSecond + (Date.now() - lastDetectedTime);
+
+                //if (isSkip) {
+                //    setDetectProcessBar(100, 100);
+
+                //    oneStepSuccess();
+                //} else {
+                //    setDetectProcessBar(periodMilliSecond, oneDetectMilliSecond);
+
+                //    if (periodMilliSecond >= oneDetectMilliSecond) {
+                //        //一個step偵測結束
+                //        oneStepSuccess();
+                //    } else {
+                //        lastDetectedTime = Date.now();
+                //    }
+                //}
+
+                setDetectProcessBar2(() => {
+                    oneStepSuccess();
+                });
+
+            } else {
+                //分數沒過
+                lastDetectedTime = null;
+            }
+
+
+        }
+
+        function showDetectTip() {
+            const detectTipDom = document.querySelector('.steps-detect-tip');
+
+            if (step != 6) {
+                detectTipDom.innerText = "請再靠近鏡頭，並讓臉部維持在畫面中央";
+            } else {
+                detectTipDom.innerText = "請再靠近鏡頭，微笑時盡量露出牙齒";
+            }
+
+            if (detectTipDom.classList.contains('is-hide')) {
+                if (lastLowScoreTime == null) {
+                    lastLowScoreTime = Date.now();
+                } else {
+                    if ((Date.now() - lastLowScoreTime) > 8000) {
+                        show(detectTipDom);
+                        lastLowScoreTime = null;
+                        setTimeout(() => {
+                            hide(detectTipDom);
+                        }, 2000);
+
+                    }
+                }
+            }
+        }
+
+        function setTestInfo(target, now) {
+            let itemText = "";
+
+            switch (step) {
+                case 1:
+                    itemText = "正在偵測臉部";
+                    break;
+
+                case 2:
+                    itemText = "eyeLookInRight,eyeLookOutLeft";
+                    break;
+
+                case 3:
+                    itemText = "eyeLookInLeft,eyeLookOutRight";
+                    break;
+
+                case 4:
+                    itemText = "eyeLookDownRight,eyeLookDownLeft";
+                    break;
+
+                case 5:
+                    itemText = "eyeBlinkRight,eyeBlinkLeft";
+                    break;
+
+                case 6:
+                    itemText = "mouthSmileLeft,mouthSmileRight";
+                    break;
+
+                default:
+                    itemText = "";
+                    break;
+            }
+
+            document.getElementById('idTestItem').innerText = itemText;
+            document.getElementById('idTestTarget').innerText = target;
+
+            document.getElementById('idTestNow').innerText = now;
+        }
+
+        function setBodyHeight() {
+            document.body.style.height = window.innerHeight + 'px';
+        }
+
+        function setLoadingState(isLoading, message = "正在整理側錄影片...") {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = loadingOverlay.querySelector('.loadingText');
+            loadingText.innerText = message;
+            loadingOverlay.style.display = isLoading ? 'flex' : 'none';
+        }
+
+        function updatePlaybackMessage(message) {
+            document.getElementById('playbackMessage').innerText = message;
+        }
+
+        function releasePlaybackUrl() {
+            if (currentPlaybackUrl) {
+                URL.revokeObjectURL(currentPlaybackUrl);
+                currentPlaybackUrl = null;
+            }
+        }
+
+        function showPlaybackPanelOnly() {
+            hide(document.querySelector('.container'));
+            hide(document.getElementById("canvas"));
+            show(document.getElementById("playbackPanel"));
+        }
+
+        function stopCameraStream() {
+            if (cameraStream) {
+                for (const track of cameraStream.getTracks()) {
+                    track.stop();
+                }
+                cameraStream = null;
+            }
+        }
+
+        async function playRecordedVideo(url) {
+            const video = document.getElementById("video");
+            const canvas = document.getElementById("canvas");
+            const playbackPanel = document.getElementById("playbackPanel");
+
+            stopCameraStream();
+            hide(canvas);
+            hide(document.querySelector('.container'));
+            show(playbackPanel);
+
+            video.pause();
+            video.srcObject = null;
+            video.src = url;
+            video.controls = true;
+            video.muted = false;
+            video.loop = false;
+
+            try {
+                await video.play();
+                updatePlaybackMessage("這是本次檢測的側錄影片，可以直接播放或使用控制列重新觀看。");
+            } catch (error) {
+                updatePlaybackMessage("影片已建立完成，請點擊播放器上的播放鍵觀看本次側錄影片。");
+            }
+        }
+
+
+        function recorderStop() {
+            if (!mediaRecorder) {
+                return Promise.resolve(null);
+            }
+
+            if (mediaRecorder.state === "inactive") {
+                if (recordedChunks.length === 0) {
+                    return Promise.resolve(null);
+                }
+
+                const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                const url = URL.createObjectURL(blob);
+                return Promise.resolve({
+                    blob,
+                    url,
+                    mimeType: mediaRecorder.mimeType
+                });
+            }
+
+            return new Promise((resolve, reject) => {
+                mediaRecorder.addEventListener('stop', async () => {
+                    try {
+                        await Promise.all(processingChunks);
+
+                        if (recordedChunks.length === 0) {
+                            resolve(null);
+                            return;
+                        }
+
+                        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                        const url = URL.createObjectURL(blob);
+                        resolve({
+                            blob,
+                            url,
+                            mimeType: mediaRecorder.mimeType
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                }, { once: true });
+
+                mediaRecorder.stop();
+            });
+        }
+
+        async function initFaceLandmarker() {
+            const video = document.getElementById("video");
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // 1. 取得攝影機串流
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    height: { ideal: window.innerHeight }
+                }
+            });
+            cameraStream = stream;
+            video.srcObject = stream;
+            await new Promise(resolve => video.addEventListener('loadedmetadata', resolve));
+
+            // 2. 设置 canvas 尺寸
+            // canvas.width = video.videoWidth;
+            // canvas.height = video.videoHeight;
+
+            // 3. 載入 Mediapipe FaceLandmarker
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+            );
+
+            const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+                    delegate: "GPU" // 使用 GPU 提升性能
+                },
+                outputFaceBlendshapes: true,
+                runningMode: "VIDEO",
+                numFaces: 1
+            });
+
+            // 3.5 新增鏡頭串流錄製
+            let mimeType = '';
+
+            if (typeof MediaRecorder === "undefined") {
+                mimeType = '';
+                updatePlaybackMessage("目前瀏覽器不支援側錄功能，完成檢測後將無法播放影片。");
+            } else if (isSafari && MediaRecorder.isTypeSupported('video/mp4')) {
+                mimeType = 'video/mp4';
+            } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                mimeType = 'video/webm';
+            } else {
+                mimeType = '';
+                updatePlaybackMessage("目前瀏覽器不支援側錄格式，完成檢測後將無法播放影片。");
+            }
+
+            if (mimeType != '') {
+                mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        if (mimeType.startsWith('video/mp4')) {
+                            recordedChunks.push(event.data);
+                        } else {
+                            //const task = convertWebMChunkToFMP4(event.data).then((fmp4) => {
+                            //    recordedChunks.push(fmp4);
+                            //});
+                            //processingChunks.push(task);
+
+                            recordedChunks.push(event.data);
+                        }
+                    }
+                };
+
+                mediaRecorder.start(5000);
+            }
+           
+
+
+            // 4. 處理影格並執行偵測
+            async function detectFaces() {
+                if (isDetecting) {
+                    //ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    const results = faceLandmarker.detectForVideo(video, performance.now());
+
+                    if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
+                        const landmarks = results.faceLandmarks[0];
+
+                        //const drawingUtils = new DrawingUtils(ctx);
+                        let scoreData = null;
+
+                        // landmarks.forEach(point => {
+                        //     ctx.fillStyle = "red";
+                        //     ctx.beginPath();
+                        //     ctx.arc(point.x * canvas.width, point.y * canvas.height, 2, 0, 2 * Math.PI);
+                        //     ctx.fill();
+                        // });
+
+                        // drawingUtils.drawConnectors(
+                        //     landmarks,
+                        //     FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+                        //     { color: "#E0E0E0" }
+                        // );
+
+                        if (results.faceBlendshapes.length > 0) {
+                            const faceBlendshape = results.faceBlendshapes[0]
+                            switch (step) {
+                                case 1:
+                                    //臉部初始偵測
+                                    //持續有result就過關
+                                    setDetectProcess(true);
+                                    setTestInfo("1.00", "1.00");
+                                    break;
+                                case 2:
+                                    //看左邊
+                                    //先尋找分數相關資料
+                                    scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight" || x.categoryName == "eyeLookOutLeft" || x.displayName == "eyeLookOutLeft");
+                                    //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight");
+
+                                    if (scoreData[0].score >= 0.45 || scoreData[1].score >= 0.45) {
+                                        setDetectProcess(true);
+                                    } else {
+                                        if (scoreData[0].score > 0.2) {
+                                            showDetectTip();
+                                        }
+
+                                        setDetectProcess(false);
+                                    }
+                                    setTestInfo("0.45", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+                                    break;
+                                case 3:
+                                    scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInLeft" || x.displayName == "eyeLookInLeft" || x.categoryName == "eyeLookOutRight" || x.displayName == "eyeLookOutRight");
+
+                                    if (scoreData[0].score >= 0.45 || scoreData[1].score >= 0.45) {
+                                        setDetectProcess(true);
+                                    } else {
+                                        if (scoreData[0].score > 0.2) {
+                                            showDetectTip();
+                                        }
+
+                                        setDetectProcess(false);
+                                    }
+                                    setTestInfo("0.45", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+
+                                    break;
+                                case 4:
+
+                                    //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "jawOpen" || x.displayName == "jawOpen");
+                                    scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookDownRight" || x.displayName == "eyeLookDownRight" || x.categoryName == "eyeLookDownLeft" || x.displayName == "eyeLookDownLeft");
+
+                                    if (scoreData[0].score >= 0.65 || scoreData[1].score >= 0.65) {
+                                        setDetectProcess(true);
+                                    } else {
+                                        if (scoreData[0].score > 0.2) {
+                                            showDetectTip();
+                                        }
+
+                                        setDetectProcess(false);
+                                    }
+                                    setTestInfo("0.65", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+                                    break;
+                                case 5:
+                                    //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeBlinkRight" || x.displayName == "eyeBlinkRight" || x.categoryName == "eyeBlinkLeft" || x.displayName == "eyeBlinkLeft");
+                                    ////scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeBlinkRight" || x.displayName == "mouthPucker");
+
+                                    //if (scoreData[0].score >= 0.55 || scoreData[1].score >= 0.55) {
+                                    //    setDetectProcess(true, true);
+                                    //} else {
+                                    //    if (scoreData[0].score > 0.2) {
+                                    //        showDetectTip();
+                                    //    }
+
+                                    //    setDetectProcess(false);
+                                    //}
+
+                                    //setTestInfo("0.55", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+
+                                    break;
+                                case 6:
+                                    //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "mouthSmileRight" || x.displayName == "mouthSmileRight" || x.categoryName == "mouthSmileLeft" || x.displayName == "mouthSmileLeft");
+
+                                    //if (scoreData[0].score >= 0.5 || scoreData[1].score >= 0.5) {
+                                    //    setDetectProcess(true);
+                                    //} else {
+                                    //    if (scoreData[0].score > 0.2) {
+                                    //        showDetectTip();
+                                    //    }
+
+                                    //    setDetectProcess(false);
+                                    //}
+
+                                    //setTestInfo("0.5", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+
+                                    break;
+                            }
+                        }
+                    } else {
+                        setTestInfo("0", "0");
+                        setDetectProcess(false);
+                    }
+                } else {
+                    setTestInfo("0", "0");
+                }
+
+
+                requestAnimationFrame(detectFaces);
+            }
+
+            detectFaces();
+        }
+
+
+        async function setSuccessToTop() {
+            if (isFinishing) {
+                return;
+            }
+
+            if (isPlaybackReady && currentPlaybackUrl) {
+                await playRecordedVideo(currentPlaybackUrl);
+                return;
+            }
+
+            isFinishing = true;
+            setLoadingState(true);
+            updatePlaybackMessage("正在建立本次側錄影片，請稍候。");
+
+            try {
+                const recordResult = await recorderStop();
+
+                if (!recordResult || !recordResult.blob || recordResult.blob.size === 0) {
+                    updatePlaybackMessage("這次沒有可播放的側錄影片，可能是瀏覽器未支援錄影或尚未產生影片資料。");
+                    showPlaybackPanelOnly();
+                    return;
+                }
+
+                releasePlaybackUrl();
+                currentPlaybackUrl = recordResult.url;
+                isPlaybackReady = true;
+                document.getElementById("replayButton").disabled = false;
+
+                await playRecordedVideo(currentPlaybackUrl);
+            } catch (error) {
+                console.error("建立側錄影片失敗：", error);
+                updatePlaybackMessage("側錄影片建立失敗，請重新整理後再試一次。");
+                showPlaybackPanelOnly();
+            } finally {
+                setLoadingState(false);
+                isFinishing = false;
+            }
+        }
+
+
+        function API_FaceValidateChecked(recordUrl, type, cb) {
+            // 舊版伺服器提交流程保留，但目前完成檢測後改為本地 Blob 播放，不再從新流程呼叫。
+            var idPageMain = document.getElementById("idPageMain");
+            let filetype = (type === 'mp4') ? 1 : 0;
+
+            if (recordUrl) {
+                fetchBlobImageAsBytes_Worker(recordUrl, filetype)
+                    .then(() => {
+                        idPageMain.classList.remove("onFull");
+
+                        webClient.UpdateUserValidate(UserInformation.SID, "FACE", true, function (success, o) {
+                            if (success) {
+                                queryUserInfo(function (success) {
+                                    if (success) {
+                                        if (UserInformation.UserInfo.UserStatus == -1) { //尚未完成基本資料
+                                            API_OpenFullRegistration();
+                                        } else {
+                                            API_MainWindow("Main", "home.aspx");
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    })
+                    .catch(err => {
+                        idPageMain.classList.remove("onFull");
+
+                        queryUserInfo(function (success) {
+                            if (success) {
+                                if (UserInformation.UserInfo.UserStatus == -1) { //尚未完成基本資料
+                                    API_OpenFullRegistration();
+                                } else {
+                                    API_MainWindow("Main", "home.aspx");
+                                }
+                            }
+                        });
+
+                        console.error("圖片處理失敗：", err.message);
+                    });
+            } else {
+                webClient.UpdateUserValidate(UserInformation.SID, "FACE", true, function (success, o) {
+                    if (success) {
+                        queryUserInfo(function (success) {
+                            if (success) {
+                                if (UserInformation.UserInfo.UserStatus == -1) { //尚未完成基本資料
+                                    API_OpenFullRegistration();
+                                } else {
+                                    API_MainWindow("Main", "home.aspx");
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+
+
+
+        window.onload = async () => {
+            document.querySelector('.finish').addEventListener('click', setSuccessToTop);
+            document.querySelector('.start-tip').addEventListener('click', startButtonClick);
+            document.getElementById('replayButton').addEventListener('click', async () => {
+                if (currentPlaybackUrl) {
+                    await playRecordedVideo(currentPlaybackUrl);
+                }
+            });
+
+            setBodyHeight();
+            window.addEventListener('resize', setBodyHeight);
+
+            try {
+                await initFaceLandmarker();
+            } catch (error) {
+                console.error("初始化 FaceLandmarker 失敗：", error);
+                setLoadingState(false);
+                updatePlaybackMessage("無法啟動攝影機或臉部偵測，請確認權限設定後重新整理頁面。");
+                showPlaybackPanelOnly();
+            }
+        };
+    </script>
+</body>
+
+</html>
