@@ -5,12 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mediapipe FaceLandmarker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&amp;display=swap" rel="stylesheet">
 
     <!--<script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.js"></script>-->
     <style>
         * {
-            font-family: "Noto Sans TC", sans-serif;
+            font-family: "Noto Sans JP", serif;
             overflow: hidden;
         }
 
@@ -287,65 +287,6 @@
             color: white;
         }
 
-        .playback-panel {
-            position: fixed;
-            inset: 0;
-            z-index: 1000000000000;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 24px;
-            box-sizing: border-box;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.15));
-            pointer-events: none;
-        }
-
-        .playback-card {
-            width: min(520px, 100%);
-            color: white;
-            background: rgba(0, 0, 0, 0.72);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 20px;
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: left;
-            pointer-events: auto;
-        }
-
-        .playback-title {
-            font-size: 26px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .playback-message {
-            font-size: 16px;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.88);
-        }
-
-        .playback-actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 16px;
-        }
-
-        .playback-button {
-            border: 0;
-            border-radius: 999px;
-            background: #2f80ed;
-            color: white;
-            padding: 12px 18px;
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        .playback-button:disabled {
-            background: #6f86a7;
-            cursor: not-allowed;
-        }
-
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -501,7 +442,7 @@
     <div class="container">
         <div class="start ">
             <div class="start-tip">
-                點擊開始進行臉部驗證，測試過程中請勿配戴口罩。
+                「開始」をクリックして顔認証を開始します。テスト中はマスクを着用しないでください。
             </div>
             <div class="start-countdown is-hide">
                 <div class="start-countdown-text">3</div>
@@ -509,7 +450,7 @@
             <div class="start-countdown-end is-hide">START</div>
         </div>
         <div class="finish  is-hide">
-            檢測已完成，點擊這裡即可播放本次側錄影片。
+            テストが正常に完了しました。クリックして戻ってください。
         </div>
 
         <div class="steps is-hide">
@@ -521,32 +462,32 @@
                 <div class="steps-process-success-overlay"></div>
             </div>
             <div class="step1 steps-action is-hide">
-                請正視鏡頭，進行臉部偵測
+                カメラを見つめて顔を検出してください
             </div>
             <div class="step2 steps-action is-hide">
-                請將臉轉向右邊
+                右に顔を向けてください
             </div>
             <div class="step3 steps-action is-hide">
-                請將臉轉向左邊
+                左に顔を向けてください
             </div>
             <div class="step4 steps-action is-hide">
-                請抬頭並將視線往下看
+                顔を上げて、視線を下に向けてください
             </div>
             <div class="step5 steps-action is-hide">
-                請面向鏡頭眨眼
+                カメラに向かってまばたきしてください
             </div>
             <div class="step6 steps-action is-hide">
-                請露出笑容
+                笑顔を見せてください
             </div>
         </div>
         <div class="steps-detect-tip s is-hide">
-            請再靠近鏡頭，並讓臉部維持在畫面中央
+            カメラに近づいて、顔が画面の中央に来るようにしてください
         </div>
 
         <div class="steps-detect-testInfo is-hide">
-            <div><span>檢測項目：</span><span id="idTestItem"></span></div>
-            <div><span>目標分數：</span><span id="idTestTarget"></span></div>
-            <div><span>目前分數：</span><span id="idTestNow"></span></div>
+            <div><span>検出項目：</span><span id="idTestItem"></span></div>
+            <div><span>目標スコア：</span><span id="idTestTarget"></span></div>
+            <div><span>現在のスコア：</span><span id="idTestNow"></span></div>
         </div>
         <div class="face-background is-hide">
 
@@ -555,16 +496,7 @@
 
     <div id="loadingOverlay" style="display:none">
         <div class="spinner"></div>
-        <div class="loadingText">正在整理側錄影片...</div>
-    </div>
-    <div id="playbackPanel" class="playback-panel is-hide">
-        <div class="playback-card">
-            <div class="playback-title">影片已準備完成</div>
-            <div id="playbackMessage" class="playback-message">檢測完成後，會在這裡直接播放本次側錄影片。</div>
-            <div class="playback-actions">
-                <button id="replayButton" type="button" class="playback-button" disabled>重新播放</button>
-            </div>
-        </div>
+        <div class="loadingText">データを確認中...</div>
     </div>
     <script type="module">
         import { FilesetResolver, FaceLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
@@ -583,10 +515,11 @@
         const recordedChunks = [];
         const processingChunks = [];
         let mediaRecorder;
-        let currentPlaybackUrl = null;
-        let cameraStream = null;
-        let isPlaybackReady = false;
-        let isFinishing = false;
+        let stopRecode = false;
+
+
+        document.querySelector('.finish').addEventListener('touchend', setSuccessToTop);
+        document.querySelector('.start-tip').addEventListener('touchend', startButtonClick);
         // document.getElementById('test').addEventListener('click', () => {
         //     setNextStep();
         //     let testChecked = true;
@@ -785,9 +718,9 @@
             const detectTipDom = document.querySelector('.steps-detect-tip');
 
             if (step != 6) {
-                detectTipDom.innerText = "請再靠近鏡頭，並讓臉部維持在畫面中央";
+                detectTipDom.innerText = " カメラに近づいて、顔が画面の中央に来るようにしてください";//請再靠近鏡頭，並保持臉部在畫面中央
             } else {
-                detectTipDom.innerText = "請再靠近鏡頭，微笑時盡量露出牙齒";
+                detectTipDom.innerText = " カメラに近づいて、笑顔の際に歯を見せてください";//請再靠近鏡頭，微笑時嘗試露齒微笑
             }
 
             if (detectTipDom.classList.contains('is-hide')) {
@@ -811,7 +744,7 @@
 
             switch (step) {
                 case 1:
-                    itemText = "正在偵測臉部";
+                    itemText = "顔を検出しています"; //偵測臉部
                     break;
 
                 case 2:
@@ -845,112 +778,43 @@
             document.getElementById('idTestNow').innerText = now;
         }
 
-        function setBodyHeight() {
-            document.body.style.height = window.innerHeight + 'px';
-        }
-
-        function setLoadingState(isLoading, message = "正在整理側錄影片...") {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loadingText = loadingOverlay.querySelector('.loadingText');
-            loadingText.innerText = message;
-            loadingOverlay.style.display = isLoading ? 'flex' : 'none';
-        }
-
-        function updatePlaybackMessage(message) {
-            document.getElementById('playbackMessage').innerText = message;
-        }
-
-        function releasePlaybackUrl() {
-            if (currentPlaybackUrl) {
-                URL.revokeObjectURL(currentPlaybackUrl);
-                currentPlaybackUrl = null;
-            }
-        }
-
-        function showPlaybackPanelOnly() {
-            hide(document.querySelector('.container'));
-            hide(document.getElementById("canvas"));
-            show(document.getElementById("playbackPanel"));
-        }
-
-        function stopCameraStream() {
-            if (cameraStream) {
-                for (const track of cameraStream.getTracks()) {
-                    track.stop();
-                }
-                cameraStream = null;
-            }
-        }
-
-        async function playRecordedVideo(url) {
-            const video = document.getElementById("video");
-            const canvas = document.getElementById("canvas");
-            const playbackPanel = document.getElementById("playbackPanel");
-
-            stopCameraStream();
-            hide(canvas);
-            hide(document.querySelector('.container'));
-            show(playbackPanel);
-
-            video.pause();
-            video.srcObject = null;
-            video.src = url;
-            video.controls = true;
-            video.muted = false;
-            video.loop = false;
-
-            try {
-                await video.play();
-                updatePlaybackMessage("這是本次檢測的側錄影片，可以直接播放或使用控制列重新觀看。");
-            } catch (error) {
-                updatePlaybackMessage("影片已建立完成，請點擊播放器上的播放鍵觀看本次側錄影片。");
-            }
-        }
 
 
         function recorderStop() {
-            if (!mediaRecorder) {
-                return Promise.resolve(null);
-            }
+            //stopRecode = true;
+            //await Promise.all(processingChunks);
 
-            if (mediaRecorder.state === "inactive") {
-                if (recordedChunks.length === 0) {
-                    return Promise.resolve(null);
-                }
+            //const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+            //let recorderUrl = URL.createObjectURL(blob);
+            //return recorderUrl;
 
-                const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
-                const url = URL.createObjectURL(blob);
-                return Promise.resolve({
-                    blob,
-                    url,
-                    mimeType: mediaRecorder.mimeType
+            stopRecode = true;
+            mediaRecorder.stop();
+            return Promise.all(processingChunks).then(() => {
+                return new Promise((resolve, reject) => {
+                    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                    let recorderUrl = URL.createObjectURL(blob);
+                    resolve(recorderUrl); // <-- 成功時回傳 Blob
                 });
-            }
-
-            return new Promise((resolve, reject) => {
-                mediaRecorder.addEventListener('stop', async () => {
-                    try {
-                        await Promise.all(processingChunks);
-
-                        if (recordedChunks.length === 0) {
-                            resolve(null);
-                            return;
-                        }
-
-                        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
-                        const url = URL.createObjectURL(blob);
-                        resolve({
-                            blob,
-                            url,
-                            mimeType: mediaRecorder.mimeType
-                        });
-                    } catch (error) {
-                        reject(error);
-                    }
-                }, { once: true });
-
-                mediaRecorder.stop();
             });
+
+
+            //return new Promise((resolve, reject) => {
+            //    if (!mediaRecorder || (mediaRecorder.state !== "recording" && mediaRecorder.state !== "inactive")) {
+            //        reject(new Error("錄影尚未啟動或已結束"));
+            //        return;
+            //    }
+
+            //    mediaRecorder.onstop = async () => {
+            //        await Promise.all(processingChunks);
+
+            //        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+            //        let recorderUrl = URL.createObjectURL(blob);
+            //        resolve(recorderUrl); // <-- 成功時回傳 Blob
+            //    };
+
+            //    mediaRecorder.stop();
+            //});
         }
 
         async function initFaceLandmarker() {
@@ -958,13 +822,12 @@
             const canvas = document.getElementById("canvas");
             const ctx = canvas.getContext("2d");
 
-            // 1. 取得攝影機串流
+            // 1. 获取摄像头视频流
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     height: { ideal: window.innerHeight }
                 }
             });
-            cameraStream = stream;
             video.srcObject = stream;
             await new Promise(resolve => video.addEventListener('loadedmetadata', resolve));
 
@@ -972,7 +835,7 @@
             // canvas.width = video.videoWidth;
             // canvas.height = video.videoHeight;
 
-            // 3. 載入 Mediapipe FaceLandmarker
+            // 3. 载入 Mediapipe FaceLandmarker
             const vision = await FilesetResolver.forVisionTasks(
                 "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
             );
@@ -990,32 +853,33 @@
             // 3.5 新增鏡頭串流錄製
             let mimeType = '';
 
-            if (typeof MediaRecorder === "undefined") {
-                mimeType = '';
-                updatePlaybackMessage("目前瀏覽器不支援側錄功能，完成檢測後將無法播放影片。");
-            } else if (isSafari && MediaRecorder.isTypeSupported('video/mp4')) {
+            if (isSafari && MediaRecorder.isTypeSupported('video/mp4')) {
                 mimeType = 'video/mp4';
             } else if (MediaRecorder.isTypeSupported('video/webm')) {
                 mimeType = 'video/webm';
             } else {
+                //alert(' このブラウザは録画フォーマットをサポートしていません'); //此瀏覽器不支援錄影格式
+                //return;
+
                 mimeType = '';
-                updatePlaybackMessage("目前瀏覽器不支援側錄格式，完成檢測後將無法播放影片。");
             }
 
             if (mimeType != '') {
                 mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
 
                 mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        if (mimeType.startsWith('video/mp4')) {
-                            recordedChunks.push(event.data);
-                        } else {
-                            //const task = convertWebMChunkToFMP4(event.data).then((fmp4) => {
-                            //    recordedChunks.push(fmp4);
-                            //});
-                            //processingChunks.push(task);
+                    if (stopRecode == false) {
+                        if (event.data.size > 0) {
+                            if (mimeType.startsWith('video/mp4')) {
+                                recordedChunks.push(event.data);
+                            } else {
+                                //const task = convertWebMChunkToFMP4(event.data).then((fmp4) => {
+                                //    recordedChunks.push(fmp4);
+                                //});
+                                //processingChunks.push(task);
 
-                            recordedChunks.push(event.data);
+                                recordedChunks.push(event.data);
+                            }
                         }
                     }
                 };
@@ -1025,7 +889,7 @@
            
 
 
-            // 4. 處理影格並執行偵測
+            // 4. 处理视频帧并绘制关键点
             async function detectFaces() {
                 if (isDetecting) {
                     //ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1155,52 +1019,28 @@
                 requestAnimationFrame(detectFaces);
             }
 
-            detectFaces();
+            detectFaces(); // 开始检测循环
         }
 
 
         async function setSuccessToTop() {
-            if (isFinishing) {
-                return;
-            }
+            if (recordedChunks.length > 0) {
+                var recorderUrl = await recorderStop();
 
-            if (isPlaybackReady && currentPlaybackUrl) {
-                await playRecordedVideo(currentPlaybackUrl);
-                return;
-            }
+                document.getElementById('loadingOverlay').style.display = 'flex';
 
-            isFinishing = true;
-            setLoadingState(true);
-            updatePlaybackMessage("正在建立本次側錄影片，請稍候。");
-
-            try {
-                const recordResult = await recorderStop();
-
-                if (!recordResult || !recordResult.blob || recordResult.blob.size === 0) {
-                    updatePlaybackMessage("這次沒有可播放的側錄影片，可能是瀏覽器未支援錄影或尚未產生影片資料。");
-                    showPlaybackPanelOnly();
-                    return;
+                if (mediaRecorder.mimeType.startsWith('video/mp4')) {
+                   API_FaceValidateChecked(recorderUrl, 'mp4');
+                } else {
+                   API_FaceValidateChecked(recorderUrl, 'webm');
                 }
-
-                releasePlaybackUrl();
-                currentPlaybackUrl = recordResult.url;
-                isPlaybackReady = true;
-                document.getElementById("replayButton").disabled = false;
-
-                await playRecordedVideo(currentPlaybackUrl);
-            } catch (error) {
-                console.error("建立側錄影片失敗：", error);
-                updatePlaybackMessage("側錄影片建立失敗，請重新整理後再試一次。");
-                showPlaybackPanelOnly();
-            } finally {
-                setLoadingState(false);
-                isFinishing = false;
-            }
+            } else {
+               API_FaceValidateChecked('', '');
+            }           
         }
 
 
         function API_FaceValidateChecked(recordUrl, type, cb) {
-            // 舊版伺服器提交流程保留，但目前完成檢測後改為本地 Blob 播放，不再從新流程呼叫。
             var idPageMain = document.getElementById("idPageMain");
             let filetype = (type === 'mp4') ? 1 : 0;
 
@@ -1258,27 +1098,23 @@
 
 
 
-        window.onload = async () => {
-            document.querySelector('.finish').addEventListener('click', setSuccessToTop);
-            document.querySelector('.start-tip').addEventListener('click', startButtonClick);
-            document.getElementById('replayButton').addEventListener('click', async () => {
-                if (currentPlaybackUrl) {
-                    await playRecordedVideo(currentPlaybackUrl);
-                }
-            });
+        initFaceLandmarker();
 
-            setBodyHeight();
-            window.addEventListener('resize', setBodyHeight);
+        window.parent.CloseLoading();
+    </script>
 
-            try {
-                await initFaceLandmarker();
-            } catch (error) {
-                console.error("初始化 FaceLandmarker 失敗：", error);
-                setLoadingState(false);
-                updatePlaybackMessage("無法啟動攝影機或臉部偵測，請確認權限設定後重新整理頁面。");
-                showPlaybackPanelOnly();
-            }
-        };
+    <script>
+        function setBodyHeight() {
+            document.body.style.height = window.innerHeight + 'px';
+        }
+
+        // 初始設置
+        setBodyHeight();
+
+
+
+        // 當窗口大小改變時，重新設置高度
+        window.addEventListener('resize', setBodyHeight);
     </script>
 </body>
 
