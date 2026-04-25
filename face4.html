@@ -505,7 +505,7 @@
     <div class="container">
         <div class="start ">
             <div class="start-tip">
-                「開始」をクリックして顔認証を開始します。テスト中はマスクを着用しないでください。
+                點擊「開始」以進行人臉驗證，測試過程中請勿配戴口罩。
             </div>
             <div class="start-countdown is-hide">
                 <div class="start-countdown-text">3</div>
@@ -513,7 +513,7 @@
             <div class="start-countdown-end is-hide">START</div>
         </div>
         <div class="finish  is-hide">
-            テストが正常に完了しました。クリックして戻ってください。
+            測試已順利完成，點擊後可返回。
         </div>
 
         <div class="steps is-hide">
@@ -525,32 +525,32 @@
                 <div class="steps-process-success-overlay"></div>
             </div>
             <div class="step1 steps-action is-hide">
-                カメラを見つめて顔を検出してください
+                請看向鏡頭，進行臉部偵測
             </div>
             <div class="step2 steps-action is-hide">
-                右に顔を向けてください
+                請將臉轉向右側
             </div>
             <div class="step3 steps-action is-hide">
-                左に顔を向けてください
+                請將臉轉向左側
             </div>
             <div class="step4 steps-action is-hide">
-                顔を上げて、視線を下に向けてください
+                請抬頭，並將視線往下看
             </div>
             <div class="step5 steps-action is-hide">
-                カメラに向かってまばたきしてください
+                請對著鏡頭眨眼
             </div>
             <div class="step6 steps-action is-hide">
-                笑顔を見せてください
+                請露出笑容
             </div>
         </div>
         <div class="steps-detect-tip s is-hide">
-            カメラに近づいて、顔が画面の中央に来るようにしてください
+            請靠近鏡頭，並讓臉保持在畫面中央
         </div>
 
         <div class="steps-detect-testInfo is-hide">
-            <div><span>検出項目：</span><span id="idTestItem"></span></div>
-            <div><span>目標スコア：</span><span id="idTestTarget"></span></div>
-            <div><span>現在のスコア：</span><span id="idTestNow"></span></div>
+            <div><span>檢測項目：</span><span id="idTestItem"></span></div>
+            <div><span>目標分數：</span><span id="idTestTarget"></span></div>
+            <div><span>目前分數：</span><span id="idTestNow"></span></div>
         </div>
         <div class="face-background is-hide">
 
@@ -559,7 +559,7 @@
 
     <div id="loadingOverlay" style="display:none">
         <div class="spinner"></div>
-        <div class="loadingText">データを確認中...</div>
+        <div class="loadingText">資料確認中...</div>
     </div>
     <div id="playbackModal" class="playback-modal is-hide">
         <div class="playback-modal-content">
@@ -852,9 +852,9 @@
             const detectTipDom = document.querySelector('.steps-detect-tip');
 
             if (step != 6) {
-                detectTipDom.innerText = " カメラに近づいて、顔が画面の中央に来るようにしてください";//請再靠近鏡頭，並保持臉部在畫面中央
+                detectTipDom.innerText = "請靠近鏡頭，並讓臉保持在畫面中央";
             } else {
-                detectTipDom.innerText = " カメラに近づいて、笑顔の際に歯を見せてください";//請再靠近鏡頭，微笑時嘗試露齒微笑
+                detectTipDom.innerText = "請靠近鏡頭，微笑時盡量露出牙齒";
             }
 
             if (detectTipDom.classList.contains('is-hide')) {
@@ -878,7 +878,7 @@
 
             switch (step) {
                 case 1:
-                    itemText = "顔を検出しています"; //偵測臉部
+                    itemText = "正在偵測臉部";
                     break;
 
                 case 2:
