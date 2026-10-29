@@ -1242,7 +1242,7 @@
 
             try {
                 if (!navigator.mediaDevices?.getUserMedia) {
-                    throw new Error('此環境無法使用攝影機，請透過 localhost 或 HTTPS 開啟。');
+                    throw new Error('此瀏覽器或開啟方式無法使用攝影機，請確認瀏覽器與相機權限。');
                 }
                 // 1. 获取摄像头视频流
                 const stream = await navigator.mediaDevices.getUserMedia({

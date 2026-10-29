@@ -1,4 +1,4 @@
-name: CI and Pages
+name: Static page and Pages
 
 on:
   push:
@@ -10,33 +10,20 @@ permissions:
 
 jobs:
   check:
-    name: Test and build
+    name: Check static files
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          package-manager-cache: false
-      - name: Check page syntax
-        run: node scripts/check-page.cjs
-      - name: Run tests
-        run: node --test
-      - name: Build static site
-        run: node scripts/build-static.cjs
-      - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.PAGES_DEPLOY_ENABLED == 'true'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
+      - name: Check HTML files
+        run: |
+          test -s face4.html
+          test -s index.html
 
   deploy:
     name: Deploy Pages
     needs: check
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.PAGES_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     permissions:
       contents: read
       pages: write
@@ -48,8 +35,17 @@ jobs:
       group: github-pages
       cancel-in-progress: false
     steps:
+      - uses: actions/checkout@v7
+      - name: Prepare static files
+        run: |
+          mkdir -p _site
+          cp face4.html index.html _site/
       - name: Configure Pages
         uses: actions/configure-pages@v5
+      - name: Upload static files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
