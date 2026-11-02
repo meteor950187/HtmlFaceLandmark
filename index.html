@@ -805,13 +805,13 @@
                 請將臉部對準橢圓框
             </div>
             <div class="step2 steps-action is-hide">
-                請將視線移向左側
+                請將頭稍微左轉，並注視螢幕
             </div>
             <div class="step3 steps-action is-hide">
-                請將視線移向右側
+                請將頭稍微右轉，並注視螢幕
             </div>
             <div class="step4 steps-action is-hide">
-                請抬高頭，視線往下看
+                請抬起頭，並注視螢幕
             </div>
             <div class="step5 steps-action is-hide">
                 請對著鏡頭眨眼
@@ -1413,7 +1413,7 @@
                                         setTestInfo("1.00", isInGuide ? "1.00" : "0.00");
                                         break;
                                     case 2:
-                                        // 對應鏡像預覽的左側視線提示。
+                                        // 左轉頭並看螢幕，引導眼睛相對臉部往右；此處只判定眼部動作。
                                         //先尋找分數相關資料
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInLeft" || x.displayName == "eyeLookInLeft" || x.categoryName == "eyeLookOutRight" || x.displayName == "eyeLookOutRight");
 
@@ -1429,7 +1429,7 @@
                                         setTestInfo(eyeLookSideThreshold.toFixed(2), scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
                                         break;
                                     case 3:
-                                        // 對應鏡像預覽的右側視線提示。
+                                        // 右轉頭並看螢幕，引導眼睛相對臉部往左；此處只判定眼部動作。
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight" || x.categoryName == "eyeLookOutLeft" || x.displayName == "eyeLookOutLeft");
 
                                         if (scoreData[0].score >= eyeLookSideThreshold || scoreData[1].score >= eyeLookSideThreshold) {
@@ -1445,7 +1445,7 @@
 
                                         break;
                                     case 4:
-
+                                        // 抬頭並看螢幕，引導眼睛相對臉部往下；此處只判定眼部動作。
                                         //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "jawOpen" || x.displayName == "jawOpen");
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookDownRight" || x.displayName == "eyeLookDownRight" || x.categoryName == "eyeLookDownLeft" || x.displayName == "eyeLookDownLeft");
 
