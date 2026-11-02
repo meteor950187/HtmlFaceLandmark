@@ -48,6 +48,10 @@
             transform: translateX(-50%);
         }
 
+        #video {
+            transform: translateX(-50%) scaleX(-1);
+        }
+
 
         .container {
             position: absolute;
@@ -1090,7 +1094,7 @@
             const centerY = guideRect.top + guideRect.height * fraction('--face-ellipse-center-y');
             if (!(radiusX > 0 && radiusY > 0)) return false;
 
-            // 攝影機以 object-fit: cover 顯示，須將原始影格座標換算為裁切後的畫面座標。
+            // 將原始影格座標換算為 object-fit: cover 裁切、左右鏡像後的畫面座標。
             const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
             const imageWidth = video.videoWidth * scale;
             const imageHeight = video.videoHeight * scale;
@@ -1098,7 +1102,7 @@
             const imageTop = videoRect.top + (videoRect.height - imageHeight) / 2;
 
             return landmarks.every(landmark => {
-                const x = imageLeft + landmark.x * imageWidth;
+                const x = imageLeft + (1 - landmark.x) * imageWidth;
                 const y = imageTop + landmark.y * imageHeight;
                 const inView = x >= videoRect.left && x <= videoRect.right && y >= videoRect.top && y <= videoRect.bottom;
                 const distance = ((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2;
@@ -1409,10 +1413,9 @@
                                         setTestInfo("1.00", isInGuide ? "1.00" : "0.00");
                                         break;
                                     case 2:
-                                        //看左邊
+                                        // 鏡像預覽中的右側，對應使用者自己的右側。
                                         //先尋找分數相關資料
-                                        scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight" || x.categoryName == "eyeLookOutLeft" || x.displayName == "eyeLookOutLeft");
-                                        //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight");
+                                        scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInLeft" || x.displayName == "eyeLookInLeft" || x.categoryName == "eyeLookOutRight" || x.displayName == "eyeLookOutRight");
 
                                         if (scoreData[0].score >= eyeLookSideThreshold || scoreData[1].score >= eyeLookSideThreshold) {
                                             setDetectProcess(true);
@@ -1426,7 +1429,8 @@
                                         setTestInfo(eyeLookSideThreshold.toFixed(2), scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
                                         break;
                                     case 3:
-                                        scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInLeft" || x.displayName == "eyeLookInLeft" || x.categoryName == "eyeLookOutRight" || x.displayName == "eyeLookOutRight");
+                                        // 鏡像預覽中的左側，對應使用者自己的左側。
+                                        scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight" || x.categoryName == "eyeLookOutLeft" || x.displayName == "eyeLookOutLeft");
 
                                         if (scoreData[0].score >= eyeLookSideThreshold || scoreData[1].score >= eyeLookSideThreshold) {
                                             setDetectProcess(true);
