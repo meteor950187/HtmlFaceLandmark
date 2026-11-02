@@ -805,10 +805,10 @@
                 請將臉部對準橢圓框
             </div>
             <div class="step2 steps-action is-hide">
-                請將視線移向右側
+                請將視線移向左側
             </div>
             <div class="step3 steps-action is-hide">
-                請將視線移向左側
+                請將視線移向右側
             </div>
             <div class="step4 steps-action is-hide">
                 請抬高頭，視線往下看
@@ -1221,11 +1221,11 @@
                     break;
 
                 case 2:
-                    itemText = "eyeLookInRight,eyeLookOutLeft";
+                    itemText = "eyeLookInLeft,eyeLookOutRight";
                     break;
 
                 case 3:
-                    itemText = "eyeLookInLeft,eyeLookOutRight";
+                    itemText = "eyeLookInRight,eyeLookOutLeft";
                     break;
 
                 case 4:
@@ -1413,7 +1413,7 @@
                                         setTestInfo("1.00", isInGuide ? "1.00" : "0.00");
                                         break;
                                     case 2:
-                                        // 鏡像預覽中的右側，對應使用者自己的右側。
+                                        // 對應鏡像預覽的左側視線提示。
                                         //先尋找分數相關資料
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInLeft" || x.displayName == "eyeLookInLeft" || x.categoryName == "eyeLookOutRight" || x.displayName == "eyeLookOutRight");
 
@@ -1429,7 +1429,7 @@
                                         setTestInfo(eyeLookSideThreshold.toFixed(2), scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
                                         break;
                                     case 3:
-                                        // 鏡像預覽中的左側，對應使用者自己的左側。
+                                        // 對應鏡像預覽的右側視線提示。
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight" || x.categoryName == "eyeLookOutLeft" || x.displayName == "eyeLookOutLeft");
 
                                         if (scoreData[0].score >= eyeLookSideThreshold || scoreData[1].score >= eyeLookSideThreshold) {
