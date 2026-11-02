@@ -307,10 +307,6 @@
             transform-origin: left;
         }
 
-        .steps-loadingBar-ani {
-            animation: barLoading 2s linear forwards;
-        }
-
         .steps-process-success-text {
             font-size: 24px;
             color: white;
@@ -632,12 +628,6 @@
             }
         }
 
-        @keyframes barLoading {
-            to {
-                transform: scaleX(1);
-            }
-        }
-
         .face-background {
             position: absolute;
             height: 100%;
@@ -722,7 +712,7 @@
             <div class="start-tip">
                 <div class="start-panel">
                     <h1 class="start-title">人臉動作測試</h1>
-                    <div class="start-description">依提示完成四個動作，結束後可下載側錄影片。</div>
+                    <div class="start-description">每個動作累積達標 5 秒，結束後可下載側錄影片。</div>
                     <div class="start-note">MediaPipe FaceLandmarker（WebAssembly）<br>請允許使用攝影機，並讓臉保持在畫面中央。</div>
                     <button id="startDemo" type="button" class="demo-button start-button playback-modal-button playback-modal-button-primary">開始測試</button>
                     <div id="startStatus" class="start-status" role="status" aria-live="polite"></div>
@@ -835,10 +825,11 @@
         let isDetecting = false;
         let lastDetectedTime = null;
         let lastLowScoreTime = null;
-        let oneDetectMilliSecond = 3000;
+        const oneDetectMilliSecond = 5000;
+        const eyeLookSideThreshold = 0.60;
+        const eyeLookDownThreshold = 0.75;
         let periodMilliSecond = 0;
         let endStep = 4;
-        let loadingEventTag = -1;
         const recordedChunks = [];
         const processingChunks = [];
         let mediaRecorder;
@@ -1018,12 +1009,19 @@
                 step++;
             }
 
+            lastDetectedTime = null;
+            periodMilliSecond = 0;
+            const loadingBarDom = document.querySelector('.steps-loadingBar');
+            loadingBarDom.style.transform = 'scaleX(0)';
+            show(loadingBarDom);
             isDetecting = true;
             renderStepProgress();
             show(document.querySelector('.step' + step));
         }
 
-        function setDetectProcess(isChecked, isSkip) {
+        function setDetectProcess(isChecked) {
+            if (!isDetecting) return;
+
             const oneStepSuccess = () => {
                 const stepsDom = document.querySelector('.steps');
 
@@ -1051,83 +1049,30 @@
                 }, 2500);
             };
 
-            const setDetectProcessBar = (_periodMilliSecond, _totalMilliSecond) => {
-                const loadingBarDom = document.querySelector('.steps-loadingBar');
-
-                if (_periodMilliSecond == 0) {
-                    show(loadingBarDom);
-                    loadingBarDom.style.width = '0%';
-                } else {
-                    const percentage = (_periodMilliSecond / _totalMilliSecond) * 100;
-
-                    if (percentage >= 100) {
-                        loadingBarDom.style.width = '100%';
-
-                        setTimeout(() => {
-                            hide(loadingBarDom);
-                        }, 10);
-                    } else {
-                        loadingBarDom.style.width = percentage + '%';
-                    }
-                }
-            };
-
-
-            const setDetectProcessBar2 = (cb) => {
-                const loadingBarDom = document.querySelector('.steps-loadingBar');
-
-
-                if (!loadingBarDom.classList.contains('steps-loadingBar-ani') && loadingEventTag == -1) {
-                    show(loadingBarDom);
-                    loadingBarDom.classList.add('steps-loadingBar-ani');
-
-                    loadingEventTag = setTimeout(() => {
-                        loadingBarDom.classList.remove('steps-loadingBar-ani');
-                        loadingEventTag = -1;
-                        hide(loadingBarDom);
-                        if (cb)
-                            cb();
-                    }, 2000);
-                }
-            };
-
-            if (isChecked) {
+            if (isChecked && !document.hidden) {
                 const detectTipDom = document.querySelector('.steps-detect-tip');
                 lastLowScoreTime = null;
                 hide(detectTipDom);
-                //分數有過
-                if (lastDetectedTime == null) {
-                    //設定新的持續偵測起始時間
-                    lastDetectedTime = Date.now();
+                const now = performance.now();
+                if (lastDetectedTime !== null) {
+                    const elapsed = now - lastDetectedTime;
+                    // 只累積相鄰達標影格的時間，略過背景分頁或偵測中斷的空檔。
+                    if (elapsed <= 250) {
+                        periodMilliSecond = Math.min(periodMilliSecond + elapsed, oneDetectMilliSecond);
+                    }
                 }
-
-                periodMilliSecond = periodMilliSecond + (Date.now() - lastDetectedTime);
-
-                //if (isSkip) {
-                //    setDetectProcessBar(100, 100);
-
-                //    oneStepSuccess();
-                //} else {
-                //    setDetectProcessBar(periodMilliSecond, oneDetectMilliSecond);
-
-                //    if (periodMilliSecond >= oneDetectMilliSecond) {
-                //        //一個step偵測結束
-                //        oneStepSuccess();
-                //    } else {
-                //        lastDetectedTime = Date.now();
-                //    }
-                //}
-
-                setDetectProcessBar2(() => {
-                    oneStepSuccess();
-                });
-
+                lastDetectedTime = now;
             } else {
-                //分數沒過
+                // 未達標或失去人臉時暫停，保留已累積的進度。
                 lastDetectedTime = null;
             }
 
-
+            const loadingBarDom = document.querySelector('.steps-loadingBar');
+            loadingBarDom.style.transform = 'scaleX(' + (periodMilliSecond / oneDetectMilliSecond) + ')';
+            if (periodMilliSecond >= oneDetectMilliSecond) {
+                hide(loadingBarDom);
+                oneStepSuccess();
+            }
         }
 
         function showDetectTip() {
@@ -1317,8 +1262,12 @@
 
 
                 // 4. 处理视频帧并绘制关键点
+                let lastVideoTime = -1;
                 async function detectFaces() {
-                    if (isDetecting) {
+                    if (document.hidden || video.paused || video.ended) {
+                        setDetectProcess(false);
+                    } else if (isDetecting && video.currentTime !== lastVideoTime) {
+                        lastVideoTime = video.currentTime;
                         //ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                         const results = faceLandmarker.detectForVideo(video, performance.now());
@@ -1357,7 +1306,7 @@
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight" || x.categoryName == "eyeLookOutLeft" || x.displayName == "eyeLookOutLeft");
                                         //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInRight" || x.displayName == "eyeLookInRight");
 
-                                        if (scoreData[0].score >= 0.45 || scoreData[1].score >= 0.45) {
+                                        if (scoreData[0].score >= eyeLookSideThreshold || scoreData[1].score >= eyeLookSideThreshold) {
                                             setDetectProcess(true);
                                         } else {
                                             if (scoreData[0].score > 0.2) {
@@ -1366,12 +1315,12 @@
 
                                             setDetectProcess(false);
                                         }
-                                        setTestInfo("0.45", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+                                        setTestInfo(eyeLookSideThreshold.toFixed(2), scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
                                         break;
                                     case 3:
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookInLeft" || x.displayName == "eyeLookInLeft" || x.categoryName == "eyeLookOutRight" || x.displayName == "eyeLookOutRight");
 
-                                        if (scoreData[0].score >= 0.45 || scoreData[1].score >= 0.45) {
+                                        if (scoreData[0].score >= eyeLookSideThreshold || scoreData[1].score >= eyeLookSideThreshold) {
                                             setDetectProcess(true);
                                         } else {
                                             if (scoreData[0].score > 0.2) {
@@ -1380,7 +1329,7 @@
 
                                             setDetectProcess(false);
                                         }
-                                        setTestInfo("0.45", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+                                        setTestInfo(eyeLookSideThreshold.toFixed(2), scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
 
                                         break;
                                     case 4:
@@ -1388,7 +1337,7 @@
                                         //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "jawOpen" || x.displayName == "jawOpen");
                                         scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeLookDownRight" || x.displayName == "eyeLookDownRight" || x.categoryName == "eyeLookDownLeft" || x.displayName == "eyeLookDownLeft");
 
-                                        if (scoreData[0].score >= 0.65 || scoreData[1].score >= 0.65) {
+                                        if (scoreData[0].score >= eyeLookDownThreshold || scoreData[1].score >= eyeLookDownThreshold) {
                                             setDetectProcess(true);
                                         } else {
                                             if (scoreData[0].score > 0.2) {
@@ -1397,7 +1346,7 @@
 
                                             setDetectProcess(false);
                                         }
-                                        setTestInfo("0.65", scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
+                                        setTestInfo(eyeLookDownThreshold.toFixed(2), scoreData[0].score.toFixed(4) + "," + scoreData[1].score.toFixed(4));
                                         break;
                                     case 5:
                                         //scoreData = faceBlendshape.categories.filter(x => x.categoryName == "eyeBlinkRight" || x.displayName == "eyeBlinkRight" || x.categoryName == "eyeBlinkLeft" || x.displayName == "eyeBlinkLeft");
@@ -1433,12 +1382,15 @@
 
                                         break;
                                 }
+                            } else {
+                                setTestInfo("0", "0");
+                                setDetectProcess(false);
                             }
                         } else {
                             setTestInfo("0", "0");
                             setDetectProcess(false);
                         }
-                    } else {
+                    } else if (!isDetecting) {
                         setTestInfo("0", "0");
                     }
 
@@ -1591,6 +1543,9 @@
             setBodyHeight();
             renderStepProgress();
             window.addEventListener('resize', setBodyHeight);
+            document.addEventListener('visibilitychange', () => {
+                lastDetectedTime = null;
+            });
             window.addEventListener('beforeunload', () => {
                 stopCamera();
                 if (currentRecorderUrl) URL.revokeObjectURL(currentRecorderUrl);
