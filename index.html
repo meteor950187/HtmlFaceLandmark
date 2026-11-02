@@ -290,19 +290,37 @@
             box-sizing: border-box;
         }
 
-        .steps-loadingBar {
-            height: 8px;
-            width: 100%;
-            padding: 0 2%;
-            background: #56ccf2;
-            /* fallback for old browsers */
-            background: -webkit-linear-gradient(to right, #56ccf2, #2f80ed);
-            /* Chrome 10-25, Safari 5.1-6 */
-            background: linear-gradient(to right, #56ccf2, #2f80ed);
+        .steps-motion-progress {
             position: absolute;
-            bottom: 0;
-            left: -1%;
-            border-radius: 4px;
+            bottom: 16px;
+            left: 24px;
+            right: 24px;
+        }
+
+        .motion-progress-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 7px;
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.4;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .motion-progress-track {
+            height: 10px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+
+        .motion-progress-fill {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(to right, #56ccf2, #2f80ed);
             transform: scaleX(0);
             transform-origin: left;
         }
@@ -628,15 +646,36 @@
             }
         }
 
-        .face-background {
+        .face-background, .face-guide {
             position: absolute;
             height: 100%;
             width: 100%;
             bottom: 160px;
             left: 0;
+            pointer-events: none;
+        }
+
+        .face-background {
             background-color: rgba(0,0,0,0.6);
-            mask: radial-gradient(ellipse 66% 46% at 50% 60%, transparent 70%, black 72%);
-            -webkit-mask: radial-gradient(ellipse 66% 46% at 50% 60%, transparent 70%, black 72%);
+            mask: radial-gradient(ellipse 62% 43% at 50% 60%, transparent 70%, black 72%);
+            -webkit-mask: radial-gradient(ellipse 62% 43% at 50% 60%, transparent 70%, black 72%);
+        }
+
+        .face-motion-progress {
+            position: absolute;
+            top: 76%;
+            left: 50%;
+            width: 56%;
+            max-width: 250px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.65);
+            transform: translate(-50%, -50%);
+        }
+
+        .face-motion-progress .motion-progress-track {
+            height: 8px;
         }
 
         .is-hide {
@@ -745,8 +784,9 @@
                     <div class="steps-progress-dot"></div>
                 </div>
             </div>
-            <div class="steps-loadingBar">
-
+            <div class="motion-progress steps-motion-progress" role="progressbar" aria-label="目前動作累積進度" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" aria-valuetext="已累積 0.0 秒，共 5 秒">
+                <div class="motion-progress-meta"><span data-motion-state>等待達標</span><span data-motion-time>0.0 / 5 秒</span></div>
+                <div class="motion-progress-track"><div class="steps-loadingBar motion-progress-fill"></div></div>
             </div>
             <div class="steps-process-success is-hide">
                 <div class="steps-process-success-text">成功</div>
@@ -782,6 +822,12 @@
         </div>
         <div class="face-background is-hide">
 
+        </div>
+        <div class="face-guide is-hide" aria-hidden="true">
+            <div class="motion-progress face-motion-progress">
+                <div class="motion-progress-meta"><span data-motion-state>等待達標</span><span data-motion-time>0.0 / 5 秒</span></div>
+                <div class="motion-progress-track"><div class="motion-progress-fill"></div></div>
+            </div>
         </div>
     </div>
 
@@ -923,6 +969,27 @@
             });
         }
 
+        function renderMotionProgress(isChecked = false) {
+            const progress = Math.min(periodMilliSecond / oneDetectMilliSecond, 1);
+            const seconds = (Math.floor(periodMilliSecond / 100) / 10).toFixed(1);
+            const totalSeconds = oneDetectMilliSecond / 1000;
+            const state = progress >= 1 ? '已達標' : isChecked ? '累積中' : periodMilliSecond > 0 ? '暫停' : '等待達標';
+
+            document.querySelectorAll('.motion-progress-fill').forEach(fill => {
+                fill.style.transform = 'scaleX(' + progress + ')';
+            });
+            document.querySelectorAll('[data-motion-time]').forEach(label => {
+                label.textContent = seconds + ' / ' + totalSeconds + ' 秒';
+            });
+            document.querySelectorAll('[data-motion-state]').forEach(label => {
+                label.textContent = state;
+            });
+            const progressDom = document.querySelector('.steps-motion-progress');
+            progressDom.setAttribute('aria-valuenow', seconds);
+            progressDom.setAttribute('aria-valuemax', totalSeconds);
+            progressDom.setAttribute('aria-valuetext', '已累積 ' + seconds + ' 秒，共 ' + totalSeconds + ' 秒');
+        }
+
         function playSideRecord(recordUrl) {
             const video = document.getElementById("video");
 
@@ -1011,9 +1078,9 @@
 
             lastDetectedTime = null;
             periodMilliSecond = 0;
-            const loadingBarDom = document.querySelector('.steps-loadingBar');
-            loadingBarDom.style.transform = 'scaleX(0)';
-            show(loadingBarDom);
+            renderMotionProgress();
+            show(document.querySelector('.steps-motion-progress'));
+            show(document.querySelector('.face-guide'));
             isDetecting = true;
             renderStepProgress();
             show(document.querySelector('.step' + step));
@@ -1041,6 +1108,8 @@
                     if (step == endStep) {
                         //檢測完畢
                         hide(document.querySelector('.steps'));
+                        hide(document.querySelector('.face-guide'));
+                        hide(document.querySelector('.face-background'));
                         show(document.querySelector('.finish'))
                         setSuccessToTop();
                     } else {
@@ -1067,10 +1136,8 @@
                 lastDetectedTime = null;
             }
 
-            const loadingBarDom = document.querySelector('.steps-loadingBar');
-            loadingBarDom.style.transform = 'scaleX(' + (periodMilliSecond / oneDetectMilliSecond) + ')';
+            renderMotionProgress(isChecked && !document.hidden);
             if (periodMilliSecond >= oneDetectMilliSecond) {
-                hide(loadingBarDom);
                 oneStepSuccess();
             }
         }
