@@ -647,6 +647,11 @@
         }
 
         .face-background, .face-guide {
+            --face-ellipse-radius-x: 62%;
+            --face-ellipse-radius-y: 43%;
+            --face-ellipse-center-x: 50%;
+            --face-ellipse-center-y: 60%;
+            --face-ellipse-clear-stop: 70%;
             position: absolute;
             height: 100%;
             width: 100%;
@@ -657,8 +662,8 @@
 
         .face-background {
             background-color: rgba(0,0,0,0.6);
-            mask: radial-gradient(ellipse 62% 43% at 50% 60%, transparent 70%, black 72%);
-            -webkit-mask: radial-gradient(ellipse 62% 43% at 50% 60%, transparent 70%, black 72%);
+            mask: radial-gradient(ellipse var(--face-ellipse-radius-x) var(--face-ellipse-radius-y) at var(--face-ellipse-center-x) var(--face-ellipse-center-y), transparent var(--face-ellipse-clear-stop), black 72%);
+            -webkit-mask: radial-gradient(ellipse var(--face-ellipse-radius-x) var(--face-ellipse-radius-y) at var(--face-ellipse-center-x) var(--face-ellipse-center-y), transparent var(--face-ellipse-clear-stop), black 72%);
         }
 
         .face-motion-progress {
@@ -793,7 +798,7 @@
                 <div class="steps-process-success-overlay"></div>
             </div>
             <div class="step1 steps-action is-hide">
-                請看向鏡頭，進行臉部偵測
+                請將臉部對準橢圓框
             </div>
             <div class="step2 steps-action is-hide">
                 請將視線移向右側
@@ -802,7 +807,7 @@
                 請將視線移向左側
             </div>
             <div class="step4 steps-action is-hide">
-                請將視線往下看
+                請抬高頭，視線往下看
             </div>
             <div class="step5 steps-action is-hide">
                 請對著鏡頭眨眼
@@ -872,8 +877,9 @@
         let lastDetectedTime = null;
         let lastLowScoreTime = null;
         const oneDetectMilliSecond = 5000;
-        const eyeLookSideThreshold = 0.60;
+        const eyeLookSideThreshold = 0.45;
         const eyeLookDownThreshold = 0.75;
+        const faceGuideTolerance = 1.10;
         let periodMilliSecond = 0;
         let endStep = 4;
         const recordedChunks = [];
@@ -1067,6 +1073,39 @@
             }
         }
 
+        function isFaceWithinGuide(landmarks, video) {
+            if (!landmarks?.length || !video.videoWidth || !video.videoHeight) return false;
+
+            const guide = document.querySelector('.face-background');
+            const guideRect = guide.getBoundingClientRect();
+            const videoRect = video.getBoundingClientRect();
+            if (!guideRect.width || !guideRect.height || !videoRect.width || !videoRect.height) return false;
+
+            const guideStyle = getComputedStyle(guide);
+            const fraction = name => parseFloat(guideStyle.getPropertyValue(name)) / 100;
+            const clearStop = fraction('--face-ellipse-clear-stop');
+            const radiusX = guideRect.width * fraction('--face-ellipse-radius-x') * clearStop * faceGuideTolerance;
+            const radiusY = guideRect.height * fraction('--face-ellipse-radius-y') * clearStop * faceGuideTolerance;
+            const centerX = guideRect.left + guideRect.width * fraction('--face-ellipse-center-x');
+            const centerY = guideRect.top + guideRect.height * fraction('--face-ellipse-center-y');
+            if (!(radiusX > 0 && radiusY > 0)) return false;
+
+            // 攝影機以 object-fit: cover 顯示，須將原始影格座標換算為裁切後的畫面座標。
+            const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
+            const imageWidth = video.videoWidth * scale;
+            const imageHeight = video.videoHeight * scale;
+            const imageLeft = videoRect.left + (videoRect.width - imageWidth) / 2;
+            const imageTop = videoRect.top + (videoRect.height - imageHeight) / 2;
+
+            return landmarks.every(landmark => {
+                const x = imageLeft + landmark.x * imageWidth;
+                const y = imageTop + landmark.y * imageHeight;
+                const inView = x >= videoRect.left && x <= videoRect.right && y >= videoRect.top && y <= videoRect.bottom;
+                const distance = ((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2;
+                return inView && distance <= 1;
+            });
+        }
+
         function setNextStep() {
             if (step == 0) {
                 const stepsDom = document.querySelector('.steps');
@@ -1145,7 +1184,9 @@
         function showDetectTip() {
             const detectTipDom = document.querySelector('.steps-detect-tip');
 
-            if (step != 6) {
+            if (step == 1) {
+                detectTipDom.innerText = "請將臉部移入橢圓框";
+            } else if (step != 6) {
                 detectTipDom.innerText = "請靠近鏡頭，並讓臉保持在畫面中央";
             } else {
                 detectTipDom.innerText = "請靠近鏡頭，微笑時盡量露出牙齒";
@@ -1362,10 +1403,10 @@
                                 const faceBlendshape = results.faceBlendshapes[0]
                                 switch (step) {
                                     case 1:
-                                        //臉部初始偵測
-                                        //持續有result就過關
-                                        setDetectProcess(true);
-                                        setTestInfo("1.00", "1.00");
+                                        const isInGuide = isFaceWithinGuide(landmarks, video);
+                                        setDetectProcess(isInGuide);
+                                        if (!isInGuide) showDetectTip();
+                                        setTestInfo("1.00", isInGuide ? "1.00" : "0.00");
                                         break;
                                     case 2:
                                         //看左邊
